@@ -1,0 +1,5 @@
+---
+aap_hostname: "{{ lookup('ansible.builtin.env', 'CONTROLLER_HOST') }}"
+aap_username: "{{ lookup('ansible.builtin.env', 'CONTROLLER_USERNAME') }}"
+aap_password: "{{ lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD') }}"
+aap_validate_certs: true

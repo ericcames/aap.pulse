@@ -1,0 +1,8 @@
+collections/
+*.retry
+output/
+*.vault
+vault_password_file
+.vault_pass*
+.env
+secrets*

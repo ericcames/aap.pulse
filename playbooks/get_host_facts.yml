@@ -1,0 +1,112 @@
+---
+- name: Report Ansible Facts for a Host from AAP Fact Cache
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    controller_hostname: "{{ lookup('ansible.builtin.env', 'CONTROLLER_HOST') }}"
+    controller_username: "{{ lookup('ansible.builtin.env', 'CONTROLLER_USERNAME') }}"
+    controller_password: "{{ lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD') }}"
+    controller_validate_certs: true
+    target_host: ""
+    output_dir: "{{ playbook_dir }}/output"
+    output_file: "{{ output_dir }}/facts-{{ target_host }}.json"
+
+  tasks:
+    - name: Validate required environment variables
+      ansible.builtin.assert:
+        that:
+          - controller_hostname | length > 0
+          - controller_username | length > 0
+          - controller_password | length > 0
+          - target_host | length > 0
+        fail_msg: "Missing required env vars: CONTROLLER_HOST, CONTROLLER_USERNAME, CONTROLLER_PASSWORD. Also supply --extra-vars target_host=<hostname>"
+        quiet: true
+
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create AAP API token
+      ansible.platform.token:
+        description: "get_host_facts lookup token"
+        scope: read
+        state: present
+        aap_hostname: "{{ controller_hostname }}"
+        aap_username: "{{ controller_username }}"
+        aap_password: "{{ controller_password }}"
+        aap_validate_certs: "{{ controller_validate_certs }}"
+      register: aap_token
+
+    - name: Query host facts and write report
+      block:
+        - name: Look up host in AAP inventory
+          ansible.builtin.uri:
+            url: "{{ controller_hostname }}/api/controller/v2/hosts/?name={{ target_host | urlencode }}"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ aap_token.ansible_facts.aap_token.token }}"
+            validate_certs: "{{ controller_validate_certs }}"
+            return_content: true
+          register: host_lookup
+
+        - name: Fail if host not found in AAP
+          ansible.builtin.assert:
+            that:
+              - host_lookup.json.count > 0
+            fail_msg: "Host '{{ target_host }}' not found in AAP inventory."
+
+        - name: Set host details
+          ansible.builtin.set_fact:
+            host_id: "{{ host_lookup.json.results[0].id }}"
+            host_inventory: "{{ host_lookup.json.results[0].summary_fields.inventory.name | default('unknown') }}"
+
+        - name: Retrieve ansible facts from AAP fact cache
+          ansible.builtin.uri:
+            url: "{{ controller_hostname }}/api/controller/v2/hosts/{{ host_id }}/ansible_facts/"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ aap_token.ansible_facts.aap_token.token }}"
+            validate_certs: "{{ controller_validate_certs }}"
+            return_content: true
+          register: facts_lookup
+
+        - name: Fail if no facts are cached for this host
+          ansible.builtin.assert:
+            that:
+              - facts_lookup.json | length > 0
+            fail_msg: "No facts cached for '{{ target_host }}'. Run a job with 'Use Fact Cache' enabled against this host first."
+
+        - name: Write facts to output file
+          ansible.builtin.copy:
+            content: "{{ facts_lookup.json | to_nice_json }}"
+            dest: "{{ output_file }}"
+            mode: "0644"
+
+        - name: Display summary
+          ansible.builtin.debug:
+            msg:
+              - "Host:      {{ target_host }}"
+              - "Host ID:   {{ host_id }}"
+              - "Inventory: {{ host_inventory }}"
+              - "OS:        {{ facts_lookup.json.ansible_distribution | default('N/A') }} {{ facts_lookup.json.ansible_distribution_version | default('') }}"
+              - "Kernel:    {{ facts_lookup.json.ansible_kernel | default('N/A') }}"
+              - "Arch:      {{ facts_lookup.json.ansible_architecture | default('N/A') }}"
+              - "CPUs:      {{ facts_lookup.json.ansible_processor_vcpus | default('N/A') }}"
+              - "Memory:    {{ (facts_lookup.json.ansible_memtotal_mb | default(0) | int / 1024) | round(1) }} GB"
+              - "IPv4:      {{ facts_lookup.json.ansible_default_ipv4.address | default('N/A') }}"
+              - "FQDN:      {{ facts_lookup.json.ansible_fqdn | default('N/A') }}"
+              - "Facts written to: {{ output_file }}"
+
+      always:
+        - name: Delete AAP API token
+          ansible.platform.token:
+            existing_token: "{{ aap_token.ansible_facts.aap_token }}"
+            state: absent
+            aap_hostname: "{{ controller_hostname }}"
+            aap_username: "{{ controller_username }}"
+            aap_password: "{{ controller_password }}"
+            aap_validate_certs: "{{ controller_validate_certs }}"
+          when: aap_token is defined and aap_token.ansible_facts is defined
