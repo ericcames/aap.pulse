@@ -96,7 +96,7 @@
               - "Arch:      {{ facts_lookup.json.ansible_architecture | default('N/A') }}"
               - "CPUs:      {{ facts_lookup.json.ansible_processor_vcpus | default('N/A') }}"
               - "Memory:    {{ (facts_lookup.json.ansible_memtotal_mb | default(0) | int / 1024) | round(1) }} GB"
-              - "IPv4:      {{ facts_lookup.json.ansible_default_ipv4.address | default('N/A') }}"
+              - "IPv4:      {{ facts_lookup.json.ansible_ip_addresses | default([]) | reject('search', ':') | list | join(', ') | default('N/A') }}"
               - "FQDN:      {{ facts_lookup.json.ansible_fqdn | default('N/A') }}"
               - "Facts written to: {{ output_file }}"
 
