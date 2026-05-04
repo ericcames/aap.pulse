@@ -72,18 +72,112 @@ Power Query M source files are in `powerbi/`. See [`powerbi/setup.md`](powerbi/s
 
 ### Columns returned
 
+60 columns, one row per host. Hosts with no cached facts appear with null values for all fact columns.
+
+**Identity**
+
+| Column | Source |
+|---|---|
+| `id` | AAP host ID |
+| `name` | Hostname as registered in AAP |
+| `inventory` | Inventory name |
+
+**OS**
+
 | Column | Ansible Fact |
 |---|---|
-| `name` | Hostname as registered in AAP |
-| `inventory_name` | Inventory the host belongs to |
-| `OS` / `OS_Version` | `ansible_distribution` / `_version` |
-| `Kernel` | `ansible_kernel` |
-| `Architecture` | `ansible_architecture` |
-| `vCPUs` | `ansible_processor_vcpus` |
-| `Memory_MB` / `Memory_GB` | `ansible_memtotal_mb` |
+| `OS` | `ansible_distribution` |
+| `OS_Name` | `ansible_os_name` |
+| `OS_Family` | `ansible_os_family` |
+| `OS_Version` | `ansible_distribution_version` |
+| `OS_Major_Version` | `ansible_distribution_major_version` |
+| `OS_Install_Type` | `ansible_os_installation_type` |
+| `OS_Product_Type` | `ansible_os_product_type` |
+| `OS_Install_Date` | `ansible_os_install_date` |
+
+**System**
+
+| Column | Ansible Fact |
+|---|---|
+| `System` | `ansible_system` |
+| `System_Description` | `ansible_system_description` |
+| `System_Vendor` | `ansible_system_vendor` |
+| `Product_Name` | `ansible_product_name` |
+| `Product_Serial` | `ansible_product_serial` |
+| `Product_UUID` | `ansible_product_uuid` |
+| `Machine_ID` | `ansible_machine_id` |
+| `BIOS_Version` | `ansible_bios_version` |
+| `BIOS_Date` | `ansible_bios_date` |
+| `Virt_Type` | `ansible_virtualization_type` |
+| `Virt_Role` | `ansible_virtualization_role` |
+
+**Network**
+
+| Column | Ansible Fact |
+|---|---|
 | `FQDN` | `ansible_fqdn` |
-| `IP_Address` | `ansible_default_ipv4.address` |
-| `Uptime_Seconds` / `Uptime_Days` | `ansible_uptime_seconds` |
+| `Hostname` | `ansible_hostname` |
+| `NetBIOS_Name` | `ansible_netbios_name` |
+| `Node_Name` | `ansible_nodename` |
+| `Domain` | `ansible_domain` |
+| `Windows_Domain` | `ansible_windows_domain` |
+| `Domain_Member` | `ansible_windows_domain_member` |
+| `Domain_Role` | `ansible_windows_domain_role` |
+| `IP_Addresses` | `ansible_ip_addresses` (IPv4 only, comma-separated) |
+
+**CPU**
+
+| Column | Ansible Fact |
+|---|---|
+| `Architecture` | `ansible_architecture` |
+| `Architecture2` | `ansible_architecture2` |
+| `vCPUs` | `ansible_processor_vcpus` |
+| `Processor_Cores` | `ansible_processor_cores` |
+| `Processor_Count` | `ansible_processor_count` |
+| `Threads_Per_Core` | `ansible_processor_threads_per_core` |
+| `Processor_Name` | `ansible_processor` (first unique CPU name extracted) |
+
+**Memory**
+
+| Column | Ansible Fact |
+|---|---|
+| `Memory_MB` | `ansible_memtotal_mb` |
+| `Memory_GB` | Derived from `ansible_memtotal_mb` |
+| `Memory_Free_MB` | `ansible_memfree_mb` |
+| `Memory_Free_GB` | Derived from `ansible_memfree_mb` |
+| `Swap_Total_MB` | `ansible_swaptotal_mb` |
+| `Pagefile_Total_MB` | `ansible_pagefiletotal_mb` |
+| `Pagefile_Free_MB` | `ansible_pagefilefree_mb` |
+| `Pagefile_Total_GB` | Derived from `ansible_pagefiletotal_mb` |
+
+**Time**
+
+| Column | Ansible Fact |
+|---|---|
+| `Last_Boot` | `ansible_lastboot` |
+| `Facts_Collected_UTC` | `ansible_date_time.iso8601` |
+| `Uptime_Seconds` | `ansible_uptime_seconds` |
+| `Uptime_Days` | Derived from `ansible_uptime_seconds` |
+| `Reboot_Pending` | `ansible_reboot_pending` |
+
+**User**
+
+| Column | Ansible Fact |
+|---|---|
+| `User_ID` | `ansible_user_id` |
+| `User_Dir` | `ansible_user_dir` |
+| `User_SID` | `ansible_user_sid` |
+| `User_GECOS` | `ansible_user_gecos` |
+
+**Windows**
+
+| Column | Ansible Fact |
+|---|---|
+| `PowerShell_Version` | `ansible_powershell_version` |
+| `WinRM_Cert_Expires` | `ansible_win_rm_certificate_expires` |
+| `WinRM_Cert_Thumbprint` | `ansible_win_rm_certificate_thumbprint` |
+| `Owner_Name` | `ansible_owner_name` |
+| `Owner_Contact` | `ansible_owner_contact` |
 
 ## Testing on Linux
 
